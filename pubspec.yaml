@@ -1,5 +1,5 @@
 name: flutter_bloc_kit
-description: "flutter_bloc 기반 상태관리 아키텍처(Result, UseCase, Bloc/Event/State 분리)와 추천 폴더 구조를 제공하는 flutter_basic_kit_library 확장 패키지."
+description: "A flutter_bloc-based architecture (Result, UseCase, Bloc/Event/State separation) and recommended folder structure, extending flutter_basic_kit_library."
 version: 0.0.1
 homepage: "https://github.com/cleanwash/flutter_bloc_kit"
 repository: "https://github.com/cleanwash/flutter_bloc_kit"
@@ -11,7 +11,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_basic_kit_library: ^0.0.1
+  flutter_basic_kit_library: ^0.0.2
   flutter_bloc: ^9.1.1
 
 dev_dependencies:
