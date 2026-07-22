@@ -19,6 +19,28 @@ dependencies:
   flutter_bloc_kit: ^0.0.1
 ```
 
+## 폴더 구조 자동 생성 (scaffold)
+
+설치 후 아래 한 줄이면 추천 폴더 구조와 **바로 실행되는 최소 `home` 기능**이 프로젝트에 생성됩니다.
+
+```bash
+dart run flutter_bloc_kit:init          # presentation/home/ 생성
+dart run flutter_bloc_kit:init login    # feature명을 인자로 (presentation/login/)
+```
+
+생성되는 것:
+
+- `data/data_source`, `data/repository`, `domain/model`, `domain/repository`, `domain/use_case` — 빈 레이어 폴더 (`.gitkeep`)
+- `presentation/<feature>/` — `state` / `event` / `bloc` / `screen` 최소 뼈대
+- `di/injector.dart` — `build<Feature>Bloc()` 수동 조립
+- `core/routing/route_paths.dart` + `core/routing/router.dart` — `RoutePaths.<feature>` → `<Feature>Screen` 으로 라우팅하는 `go_router` 설정
+
+그리고 `flutter pub add go_router` 도 자동으로 실행해줍니다. `flutter_bloc`은 이 패키지가 이미 번들(re-export)하며 `BlocProvider`도 함께 제공하므로 `provider`는 따로 필요 없습니다.
+
+> 폴더 구조는 `flutter_provider_kit`/`flutter_riverpod_kit`과 동일합니다. 상태관리 방식에 따라 `presentation/` 안(bloc vs view_model) 만 달라집니다.
+>
+> `pub get`은 npm의 `postinstall` 같은 자동 실행 훅이 없어서, 설치 순간이 아니라 위 명령을 **한 번 실행**하는 방식입니다. 이미 있는 파일은 절대 덮어쓰지 않습니다.
+
 ## 추천 폴더 구조
 
 `example/`에 아래 구조로 "사진 검색" 기능이 실제로 구현되어 있습니다 (데이터는 mock).

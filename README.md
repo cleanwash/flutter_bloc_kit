@@ -19,6 +19,28 @@ dependencies:
   flutter_bloc_kit: ^0.0.1
 ```
 
+## Scaffold the structure
+
+After installing, one command scaffolds the recommended folders plus a minimal, **ready-to-run `home` feature** into your project:
+
+```bash
+dart run flutter_bloc_kit:init          # creates presentation/home/
+dart run flutter_bloc_kit:init login    # feature name as an argument (presentation/login/)
+```
+
+What it generates:
+
+- `data/data_source`, `data/repository`, `domain/model`, `domain/repository`, `domain/use_case` — empty layer folders (`.gitkeep`)
+- `presentation/<feature>/` — minimal `state` / `event` / `bloc` / `screen` stubs
+- `di/injector.dart` — a manual `build<Feature>Bloc()`
+- `core/routing/route_paths.dart` + `core/routing/router.dart` — a `go_router` config routing `RoutePaths.<feature>` to `<Feature>Screen`
+
+It also runs `flutter pub add go_router` for you. `flutter_bloc` is already bundled (re-exported) and provides `BlocProvider`, so no `provider` dependency is needed.
+
+> The folder structure is identical to `flutter_provider_kit`/`flutter_riverpod_kit`; only the contents of `presentation/` (bloc vs view_model) differ by state-management choice.
+>
+> `pub get` has no auto-run hook (unlike npm's `postinstall`), so this is a one-off command you run once after installing. Existing files are never overwritten.
+
 ## Recommended folder structure
 
 `example/` implements a "photo search" feature end to end (with mock data) using this structure.

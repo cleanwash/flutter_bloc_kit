@@ -1,6 +1,6 @@
 name: flutter_bloc_kit
 description: "A flutter_bloc-based architecture (Result, UseCase, Bloc/Event/State separation) and recommended folder structure, extending flutter_basic_kit_library."
-version: 0.0.2
+version: 0.0.3
 homepage: "https://github.com/cleanwash/flutter_bloc_kit"
 repository: "https://github.com/cleanwash/flutter_bloc_kit"
 
