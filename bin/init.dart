@@ -134,7 +134,13 @@ Future<void> _syncBasicKitDependencies() async {
     dev = _fallbackDev;
   } else {
     final doc = loadYaml(pubspec.readAsStringSync());
-    runtime = _extractDeps(doc is YamlMap ? doc['dependencies'] : null);
+    // State-management libs come from THIS kit (dependency + re-export), so
+    // exclude them from the basic_kit mirror — a bloc app must not get
+    // provider/flutter_riverpod dragged in.
+    runtime = _extractDeps(
+      doc is YamlMap ? doc['dependencies'] : null,
+      denylist: _stateMgmtDenylist,
+    );
     dev = _extractDeps(
       doc is YamlMap ? doc['dev_dependencies'] : null,
       denylist: _devDenylist,
@@ -192,6 +198,17 @@ Map<String, String> _extractDeps(
 /// Dev tools flutter_basic_kit_library declares that every Flutter app already
 /// has — skip them so we don't fight the app's own versions.
 const _devDenylist = {'flutter_test', 'flutter_lints'};
+
+/// State-management libs that each kit already provides via its own dependency
+/// and re-export. Never mirror these from basic_kit, or a bloc app would pick
+/// up provider/flutter_riverpod (and vice-versa) it doesn't need.
+const _stateMgmtDenylist = {
+  'provider',
+  'flutter_bloc',
+  'bloc',
+  'flutter_riverpod',
+  'riverpod',
+};
 
 /// Used only when flutter_basic_kit_library can't be located. Empty constraint
 /// means "let pub pick a compatible version".
