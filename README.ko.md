@@ -16,30 +16,45 @@
 
 ```yaml
 dependencies:
-  flutter_bloc_kit: ^0.0.1
+  flutter_bloc_kit: ^0.0.4
 ```
 
-## 폴더 구조 자동 생성 (scaffold)
+> ⚠️ **설치만으로는 부족합니다 — 반드시 `init`을 실행하세요.** `flutter pub get`은 이 패키지를 내려받기만 할 뿐, 폴더를 만들지도 아키텍처 라이브러리를 추가하지도 **않습니다.** `pub get`에는 npm의 `postinstall` 같은 자동 실행 훅이 없어서, scaffold는 아래 명령을 **한 번 직접 실행**해야 합니다. 이 한 번으로 폴더 구조 **와** 라이브러리가 함께 세팅됩니다.
 
-설치 후 아래 한 줄이면 추천 폴더 구조와 **바로 실행되는 최소 `home` 기능**이 프로젝트에 생성됩니다.
+## 폴더 구조 자동 생성 (scaffold) — 최초 1회 필수
+
+`init`은 한 명령으로 두 가지를 합니다: **(1)** 추천 폴더 구조 + **바로 실행되는 최소 `home` 기능** 생성, **(2)** 아키텍처 라이브러리를 `pubspec.yaml`에 추가.
 
 ```bash
+# 의존성으로 추가한 경우:
 dart run flutter_bloc_kit:init          # presentation/home/ 생성
 dart run flutter_bloc_kit:init login    # feature명을 인자로 (presentation/login/)
+
+# 또는 전역 명령으로 설치해서 어느 프로젝트에서든 실행:
+dart pub global activate flutter_bloc_kit
+bloc_kit init
 ```
 
-생성되는 것:
+**1. 생성되는 폴더 + 파일**
 
-- `data/data_source`, `data/repository`, `domain/model`, `domain/repository`, `domain/use_case` — 빈 레이어 폴더 (`.gitkeep`)
+- `data/data_source`, `data/repository`, `domain/model`, `domain/repository`, `domain/use_case` — 빈 레이어 폴더
 - `presentation/<feature>/` — `state` / `event` / `bloc` / `screen` 최소 뼈대
 - `di/injector.dart` — `build<Feature>Bloc()` 수동 조립
 - `core/routing/route_paths.dart` + `core/routing/router.dart` — `RoutePaths.<feature>` → `<Feature>Screen` 으로 라우팅하는 `go_router` 설정
 
-그리고 `flutter pub add go_router` 도 자동으로 실행해줍니다. `flutter_bloc`은 이 패키지가 이미 번들(re-export)하며 `BlocProvider`도 함께 제공하므로 `provider`는 따로 필요 없습니다.
+**2. 추가되는 라이브러리 — flutter_basic_kit_library를 참조**
 
-> 폴더 구조는 `flutter_provider_kit`/`flutter_riverpod_kit`과 동일합니다. 상태관리 방식에 따라 `presentation/` 안(bloc vs view_model) 만 달라집니다.
->
-> `pub get`은 npm의 `postinstall` 같은 자동 실행 훅이 없어서, 설치 순간이 아니라 위 명령을 **한 번 실행**하는 방식입니다. 이미 있는 파일은 절대 덮어쓰지 않습니다.
+`init`은 실행 시점에 [flutter_basic_kit_library](https://pub.dev/packages/flutter_basic_kit_library)의 `pubspec.yaml`을 직접 읽어, 그 런타임·dev 스택을 **그대로** 앱에 추가합니다. 그래서 생성된 아키텍처가 바로 동작해요: 라우팅(`go_router`), DI(`get_it`, `injectable`), 네트워킹(`dio`, `retrofit`), 모델 코드젠(`freezed`, `json_serializable`, `build_runner`), 그리고 `google_fonts`, `intl`, `flutter_secure_storage` 등. flutter_basic_kit_library를 직접 읽기 때문에 목록이 **단일 진실 공급원**이 되어, 그 패키지가 라이브러리를 추가/갱신하면 `init`이 자동으로 반영합니다. `flutter_bloc`은 이 패키지가 이미 번들(re-export)하며 `BlocProvider`도 함께 제공하므로 `provider`는 따로 필요 없습니다.
+
+> 폴더 구조는 `flutter_provider_kit`/`flutter_riverpod_kit`과 동일합니다. 상태관리 방식에 따라 `presentation/` 안(bloc vs view_model)만 달라집니다. 이미 있는 파일은 절대 덮어쓰지 않으니 재실행해도 안전합니다.
+
+`init` 실행 후 한 번 확인하세요:
+
+```bash
+flutter pub get
+flutter analyze
+dart run build_runner build --delete-conflicting-outputs   # 코드젠 모델을 쓸 경우
+```
 
 ## 추천 폴더 구조
 

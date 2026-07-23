@@ -1,6 +1,6 @@
 name: flutter_bloc_kit
 description: "A flutter_bloc-based architecture (Result, UseCase, Bloc/Event/State separation) and recommended folder structure, extending flutter_basic_kit_library."
-version: 0.0.3
+version: 0.0.4
 homepage: "https://github.com/cleanwash/flutter_bloc_kit"
 repository: "https://github.com/cleanwash/flutter_bloc_kit"
 
@@ -8,11 +8,17 @@ environment:
   sdk: ^3.12.2
   flutter: ">=1.17.0"
 
+# Enables `dart pub global activate flutter_bloc_kit` + `bloc_kit init`.
+executables:
+  bloc_kit: init
+
 dependencies:
   flutter:
     sdk: flutter
-  flutter_basic_kit_library: ^0.0.2
+  flutter_basic_kit_library: ^0.0.3
   flutter_bloc: ^9.1.1
+  # Used by bin/init.dart to read flutter_basic_kit_library's pubspec.
+  yaml: ^3.1.2
 
 dev_dependencies:
   flutter_test:

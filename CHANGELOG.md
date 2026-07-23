@@ -1,3 +1,10 @@
+## 0.0.4
+
+* `init`이 이제 `flutter_basic_kit_library`의 `pubspec.yaml`을 직접 읽어, 그 런타임·dev 의존성 전체를 소비 앱에 자동으로 `flutter pub add` 함. 목록이 하드코딩에서 벗어나 `flutter_basic_kit_library`가 단일 진실 공급원이 됨 — basic_kit에 라이브러리를 추가/갱신하면 init을 고치지 않아도 자동 반영됨(`flutter_basic_kit_library ^0.0.3` 반영, `intl`·`flutter_secure_storage` 포함).
+* data/domain 레이어를 `.gitkeep` 없이 빈 디렉터리로 생성.
+* `executables:` 추가 — `dart pub global activate flutter_bloc_kit` 후 `bloc_kit init [feature]` 짧은 명령으로 실행 가능.
+* init의 pubspec 파싱을 위해 `yaml` 의존성 추가.
+
 ## 0.0.3
 
 * `dart run flutter_bloc_kit:init [feature]` 스캐폴딩 명령 추가(`bin/init.dart`). data/domain 레이어 폴더, 바로 실행되는 최소 `presentation/<feature>`(state/event/bloc/screen), `di/injector.dart`, `core/routing/route_paths.dart`+`router.dart`(go_router) 뼈대를 생성하며, 기존 파일은 덮어쓰지 않음. feature명 기본값은 `home`. 폴더 구조는 provider/riverpod kit과 동일.

@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
+
+import 'package:yaml/yaml.dart';
 
 /// Scaffolds the recommended `flutter_bloc_kit` folder structure into the
 /// current project's `lib/`, adds `go_router`, and generates a minimal,
@@ -47,7 +50,6 @@ Future<void> main(List<String> args) async {
   ];
 
   final files = <String, String>{
-    for (final dir in emptyLayers) '$dir/.gitkeep': '',
     'lib/presentation/$feature/${feature}_state.dart': _stateStub(className),
     'lib/presentation/$feature/${feature}_event.dart': _eventStub(className),
     'lib/presentation/$feature/${feature}_bloc.dart':
@@ -61,6 +63,13 @@ Future<void> main(List<String> args) async {
 
   final created = <String>[];
   final skipped = <String>[];
+
+  // Architecture layers are created as empty directories (no .gitkeep);
+  // fill them in per feature (data_source, repository, model, use_case, ...).
+  for (final dir in emptyLayers) {
+    Directory(dir).createSync(recursive: true);
+    created.add('$dir/');
+  }
 
   files.forEach((path, contents) {
     final file = File(path);
@@ -81,7 +90,11 @@ Future<void> main(List<String> args) async {
     stdout.writeln('  · $path (exists, left untouched)');
   }
 
-  await _addDependencies(const ['go_router']);
+  // Read flutter_basic_kit_library's own pubspec and mirror its dependency
+  // stack into the consumer app. This keeps the list a single source of truth:
+  // updating flutter_basic_kit_library is enough — init needs no changes.
+  // flutter_bloc is already bundled via this package.
+  await _syncBasicKitDependencies();
 
   stdout.writeln(
     '\n✓ Done. Wire `router` (lib/core/routing/router.dart) into '
@@ -103,34 +116,145 @@ String _toCamelCase(String snake) {
   return pascal.isEmpty ? pascal : pascal[0].toLowerCase() + pascal.substring(1);
 }
 
-/// Adds any of [packages] not already present in `pubspec.yaml` via
-/// `flutter pub add`. Never throws — on failure it prints manual instructions
-/// so the scaffold still succeeds offline.
-Future<void> _addDependencies(List<String> packages) async {
+/// Reads flutter_basic_kit_library's pubspec (resolved as a transitive
+/// dependency of this package) and adds the same runtime + dev dependencies to
+/// the consumer app. flutter_basic_kit_library is the single source of truth —
+/// updating it is automatically reflected here. Falls back to a built-in list
+/// if it can't be located (e.g. offline / unusual setups).
+Future<void> _syncBasicKitDependencies() async {
+  final pubspec = _findBasicKitPubspec();
+  Map<String, String> runtime;
+  Map<String, String> dev;
+
+  if (pubspec == null) {
+    stdout.writeln(
+      '\n! Could not locate flutter_basic_kit_library — using built-in list.',
+    );
+    runtime = _fallbackRuntime;
+    dev = _fallbackDev;
+  } else {
+    final doc = loadYaml(pubspec.readAsStringSync());
+    runtime = _extractDeps(doc is YamlMap ? doc['dependencies'] : null);
+    dev = _extractDeps(
+      doc is YamlMap ? doc['dev_dependencies'] : null,
+      denylist: _devDenylist,
+    );
+    stdout.writeln(
+      '\nMirroring flutter_basic_kit_library dependencies '
+      '(${runtime.length} runtime, ${dev.length} dev).',
+    );
+  }
+
+  await _addDependencies(runtime);
+  await _addDependencies(dev, dev: true);
+}
+
+/// Locates flutter_basic_kit_library's pubspec.yaml through the consumer app's
+/// `.dart_tool/package_config.json`. Returns null if it isn't resolved.
+File? _findBasicKitPubspec() {
+  final config = File('.dart_tool/package_config.json');
+  if (!config.existsSync()) return null;
+  try {
+    final json = jsonDecode(config.readAsStringSync()) as Map<String, dynamic>;
+    final packages = json['packages'] as List<dynamic>;
+    for (final entry in packages.cast<Map<String, dynamic>>()) {
+      if (entry['name'] != 'flutter_basic_kit_library') continue;
+      var rootUri = entry['rootUri'] as String;
+      if (!rootUri.endsWith('/')) rootUri = '$rootUri/';
+      final pubspecUri =
+          config.absolute.uri.resolve(rootUri).resolve('pubspec.yaml');
+      final pubspec = File.fromUri(pubspecUri);
+      return pubspec.existsSync() ? pubspec : null;
+    }
+  } catch (_) {
+    // Malformed config — fall through to the built-in fallback list.
+  }
+  return null;
+}
+
+/// Turns a pubspec `dependencies`/`dev_dependencies` node into a
+/// {name: versionConstraint} map, keeping only simple hosted deps (a version
+/// string) and dropping sdk/git/path entries plus anything in [denylist].
+Map<String, String> _extractDeps(
+  Object? node, {
+  Set<String> denylist = const {},
+}) {
+  final deps = <String, String>{};
+  if (node is! YamlMap) return deps;
+  node.forEach((key, value) {
+    final name = key.toString();
+    if (denylist.contains(name)) return;
+    if (value is String) deps[name] = value;
+  });
+  return deps;
+}
+
+/// Dev tools flutter_basic_kit_library declares that every Flutter app already
+/// has — skip them so we don't fight the app's own versions.
+const _devDenylist = {'flutter_test', 'flutter_lints'};
+
+/// Used only when flutter_basic_kit_library can't be located. Empty constraint
+/// means "let pub pick a compatible version".
+const _fallbackRuntime = <String, String>{
+  'go_router': '',
+  'dio': '',
+  'retrofit': '',
+  'get_it': '',
+  'injectable': '',
+  'freezed_annotation': '',
+  'json_annotation': '',
+  'google_fonts': '',
+  'curved_navigation_bar': '',
+  'flutter_native_splash': '',
+};
+const _fallbackDev = <String, String>{
+  'build_runner': '',
+  'freezed': '',
+  'json_serializable': '',
+  'injectable_generator': '',
+  'retrofit_generator': '',
+};
+
+/// Adds any of [deps] (name → version constraint; empty = unpinned) not already
+/// present in `pubspec.yaml`. Never throws — on failure it prints manual
+/// instructions so the scaffold still succeeds offline.
+Future<void> _addDependencies(
+  Map<String, String> deps, {
+  bool dev = false,
+}) async {
+  if (deps.isEmpty) return;
+  final label = dev ? 'dev dependencies' : 'dependencies';
+  final flag = dev ? '--dev ' : '';
   final pubspec = File('pubspec.yaml');
   final contents = pubspec.existsSync() ? pubspec.readAsStringSync() : '';
-  final missing = packages
+  final missing = deps.keys
       .where((p) => !RegExp('^\\s+$p:', multiLine: true).hasMatch(contents))
       .toList();
 
   if (missing.isEmpty) {
-    stdout.writeln('\nDependencies already present: ${packages.join(', ')}');
+    stdout.writeln('\n$label already present: ${deps.keys.join(', ')}');
     return;
   }
 
-  stdout.writeln('\nAdding dependencies: ${missing.join(', ')} ...');
+  final args = [
+    for (final p in missing) (deps[p] ?? '').isEmpty ? p : '$p:${deps[p]}',
+  ];
+  stdout.writeln('\nAdding $label: ${missing.join(', ')} ...');
   try {
-    final result =
-        await Process.run('flutter', ['pub', 'add', ...missing], runInShell: true);
+    final result = await Process.run(
+      'flutter',
+      ['pub', 'add', if (dev) '--dev', ...args],
+      runInShell: true,
+    );
     if (result.exitCode == 0) {
       stdout.writeln('  ✓ ${missing.join(', ')} added');
     } else {
       stdout.writeln('  ! `flutter pub add` failed:\n${result.stderr}');
-      stdout.writeln('  → Add manually: flutter pub add ${missing.join(' ')}');
+      stdout.writeln('  → Add manually: flutter pub add $flag${args.join(' ')}');
     }
   } catch (_) {
     stdout.writeln('  ! Could not run `flutter`.');
-    stdout.writeln('  → Add manually: flutter pub add ${missing.join(' ')}');
+    stdout.writeln('  → Add manually: flutter pub add $flag${args.join(' ')}');
   }
 }
 
