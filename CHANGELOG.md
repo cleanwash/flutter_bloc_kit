@@ -1,3 +1,7 @@
+## 0.0.5
+
+* `init`이 이제 테스트 뼈대도 함께 생성 — `test/presentation/<feature>/<feature>_bloc_test.dart`에 초기 상태 검증 + `emitsInOrder`로 로딩 on/off 상태 전이 검증 테스트를 만들어주며(bloc_test 의존성 불필요), use case가 늘어나면 생성자에 Fake를 주입하는 가이드 주석 포함. 소비 앱의 패키지명은 pubspec에서 자동으로 읽음.
+
 ## 0.0.4
 
 * `init`이 이제 `flutter_basic_kit_library`의 `pubspec.yaml`을 직접 읽어, 그 런타임·dev 의존성 전체를 소비 앱에 자동으로 `flutter pub add` 함. 목록이 하드코딩에서 벗어나 `flutter_basic_kit_library`가 단일 진실 공급원이 됨 — basic_kit에 라이브러리를 추가/갱신하면 init을 고치지 않아도 자동 반영됨(`flutter_basic_kit_library ^0.0.3` 반영, `intl`·`flutter_secure_storage` 포함).

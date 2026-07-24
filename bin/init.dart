@@ -40,6 +40,7 @@ Future<void> main(List<String> args) async {
 
   final className = _toPascalCase(feature);
   final camelName = _toCamelCase(feature);
+  final packageName = _readPackageName();
 
   const emptyLayers = [
     'lib/data/data_source',
@@ -59,6 +60,8 @@ Future<void> main(List<String> args) async {
     'lib/di/injector.dart': _diStub(className, feature),
     'lib/core/routing/route_paths.dart': _routePathsStub(camelName),
     'lib/core/routing/router.dart': _routerStub(className, camelName, feature),
+    'test/presentation/$feature/${feature}_bloc_test.dart':
+        _testStub(className, feature, packageName),
   };
 
   final created = <String>[];
@@ -104,6 +107,16 @@ Future<void> main(List<String> args) async {
 
 bool _isValidFeature(String name) =>
     RegExp(r'^[a-z][a-z0-9_]*$').hasMatch(name);
+
+/// Reads the consumer app's package name from its pubspec.yaml so generated
+/// test files can import the scaffolded sources with package: imports.
+String _readPackageName() {
+  final pubspec = File('pubspec.yaml');
+  if (!pubspec.existsSync()) return 'app';
+  final match = RegExp(r'^name:\s*(\S+)', multiLine: true)
+      .firstMatch(pubspec.readAsStringSync());
+  return match?.group(1) ?? 'app';
+}
 
 String _toPascalCase(String snake) => snake
     .split('_')
@@ -402,4 +415,45 @@ final GoRouter router = GoRouter(
     ),
   ],
 );
+''';
+
+String _testStub(String c, String f, String pkg) =>
+    '''import 'package:flutter_test/flutter_test.dart';
+
+import 'package:$pkg/presentation/$f/${f}_bloc.dart';
+import 'package:$pkg/presentation/$f/${f}_event.dart';
+import 'package:$pkg/presentation/$f/${f}_state.dart';
+
+/// Starter tests for ${c}Bloc. As you add use cases, pass hand-written Fakes
+/// through the constructor (prefer Fakes over mock libraries):
+///
+/// ```dart
+/// final bloc = ${c}Bloc(FakeGetSomething());
+/// ```
+void main() {
+  group('${c}Bloc', () {
+    test('initial state is not loading', () {
+      final bloc = ${c}Bloc();
+      addTearDown(bloc.close);
+
+      expect(bloc.state.isLoading, false);
+    });
+
+    test('${c}Started toggles loading on and off', () async {
+      final bloc = ${c}Bloc();
+      addTearDown(bloc.close);
+
+      final states = expectLater(
+        bloc.stream,
+        emitsInOrder([
+          isA<${c}State>().having((s) => s.isLoading, 'isLoading', true),
+          isA<${c}State>().having((s) => s.isLoading, 'isLoading', false),
+        ]),
+      );
+
+      bloc.add(const ${c}Started());
+      await states;
+    });
+  });
+}
 ''';
