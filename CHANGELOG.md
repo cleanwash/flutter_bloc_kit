@@ -1,3 +1,12 @@
+## 0.0.7
+
+_(요약: State/Event가 Equatable을 상속하도록 변경, global executable(bloc_kit init) 경로에서 자기 자신·flutter_bloc·equatable이 안 잡히던 문제 수정, flutter_native_splash를 dev_dependencies로)_
+
+* Generated `State`/`Event` classes now extend `Equatable` with a `props` override, giving proper value equality instead of identity equality — this matters for `blocTest`-style state-sequence assertions and for `BlocBuilder`/`buildWhen` rebuild optimizations. Added `equatable` as a dependency.
+* `init` now explicitly adds `flutter_bloc_kit`, `flutter_bloc`, and `equatable` to the consumer app's `dependencies` before mirroring `flutter_basic_kit_library`. Previously, running via the `bloc_kit` global executable (as opposed to the documented `dart run flutter_bloc_kit:init` flow) never added these — generated code imports `package:flutter_bloc_kit/...`, so this could leave the app with unresolved imports, and also caused `flutter_basic_kit_library` to be unresolvable, silently falling back to a stale built-in dependency list.
+* Moved `flutter_native_splash` out of the fallback runtime list into the fallback dev list, matching the same fix in `flutter_basic_kit_library` 0.0.4.
+* Widened the `flutter_basic_kit_library` constraint to `">=0.0.4 <0.1.0"`.
+
 ## 0.0.6
 
 _(요약: CHANGELOG 비ASCII 비율 정리)_

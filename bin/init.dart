@@ -135,6 +135,21 @@ String _toCamelCase(String snake) {
 /// updating it is automatically reflected here. Falls back to a built-in list
 /// if it can't be located (e.g. offline / unusual setups).
 Future<void> _syncBasicKitDependencies() async {
+  // Ensure the kit itself and its core state-management libraries are direct
+  // dependencies of the consumer app. The documented `dart run
+  // flutter_bloc_kit:init` flow already requires this (pubspec.yaml must
+  // list flutter_bloc_kit before running init), but the `bloc_kit`
+  // global-executable shortcut skips that step entirely. Adding these here
+  // also makes flutter_basic_kit_library resolvable below, instead of
+  // silently falling back to the built-in list. `equatable` is bloc-specific
+  // (State/Event value equality), so it's registered here rather than in
+  // flutter_basic_kit_library.
+  await _addDependencies({
+    'flutter_bloc_kit': '',
+    'flutter_bloc': '',
+    'equatable': '',
+  });
+
   final pubspec = _findBasicKitPubspec();
   Map<String, String> runtime;
   Map<String, String> dev;
@@ -235,7 +250,6 @@ const _fallbackRuntime = <String, String>{
   'json_annotation': '',
   'google_fonts': '',
   'curved_navigation_bar': '',
-  'flutter_native_splash': '',
 };
 const _fallbackDev = <String, String>{
   'build_runner': '',
@@ -243,6 +257,7 @@ const _fallbackDev = <String, String>{
   'json_serializable': '',
   'injectable_generator': '',
   'retrofit_generator': '',
+  'flutter_native_splash': '',
 };
 
 /// Adds any of [deps] (name → version constraint; empty = unpinned) not already
@@ -288,8 +303,10 @@ Future<void> _addDependencies(
   }
 }
 
-String _stateStub(String c) => '''/// State the $c screen reads on every rebuild.
-class ${c}State {
+String _stateStub(String c) => '''import 'package:equatable/equatable.dart';
+
+/// State the $c screen reads on every rebuild.
+class ${c}State extends Equatable {
   const ${c}State({this.isLoading = false});
 
   final bool isLoading;
@@ -297,13 +314,21 @@ class ${c}State {
   ${c}State copyWith({bool? isLoading}) {
     return ${c}State(isLoading: isLoading ?? this.isLoading);
   }
+
+  @override
+  List<Object?> get props => [isLoading];
 }
 ''';
 
 String _eventStub(String c) =>
-    '''/// Every user-triggered event the $c bloc reacts to.
-sealed class ${c}Event {
+    '''import 'package:equatable/equatable.dart';
+
+/// Every user-triggered event the $c bloc reacts to.
+sealed class ${c}Event extends Equatable {
   const ${c}Event();
+
+  @override
+  List<Object?> get props => [];
 }
 
 /// Fired once when the screen first appears. Add more events as needed.
